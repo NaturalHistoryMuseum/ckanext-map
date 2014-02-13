@@ -143,6 +143,38 @@ my.NHMMap = Backbone.View.extend({
       this._div.innerHTML = Mustache.render(template, props);
     };
 
+    // Features are overlapping on a grid, either because they have the exact same coordinates
+    // or they are close enough to end up in the same bucket. Since the buckets are calculated
+    // by postgis based on the size of the pixel, we can stick to using Leaflets pixel dimensions
+    // and save a whole load of maths.
+    this.info.selectOverlapping = function (props) {
+      var grid_size = 8; // the size of the grid, in pixels, as used in the SQL queries
+      var point = self.map.project(props.latlng); // gives the number of pixels from upper left
+
+      // Figure out the coords used for the location in st_snaptogrid - basically, round to the nearest
+      // multiple of grid_size
+      var xgrid = Math.round((point.x) / (grid_size)) * grid_size;
+      var ygrid = Math.round((point.y) / (grid_size)) * grid_size;
+
+      // Create a box with the grid point in the center
+      var xmin = xgrid - (grid_size/2);
+      var xmax = xgrid + (grid_size/2);
+
+      var ymin = ygrid - (grid_size/2);
+      var ymax = ygrid + (grid_size/2);
+
+      // Unproject the points back into lat/lons, and use them as a feature
+      var sw = self.map.unproject(L.point(xmin, ymax));
+      var ne = self.map.unproject(L.point(xmax, ymin));
+
+      var bounds = L.latLngBounds(sw, ne);
+      var feature = L.rectangle(bounds);
+
+      self.model.queryState.attributes.geom = feature.toGeoJSON().geometry;
+      self.map.fitBounds(bounds);
+      self.redraw();
+    };
+
     this.layers = [];
     this.controls = [];
     this.mapReady = true;
@@ -192,7 +224,7 @@ my.NHMMap = Backbone.View.extend({
       resolution: 4
     });
 
-    utfGrid.on('mouseover', function(e){ self.info.update(e);}).on('mouseout', function(e){ self.info.update();})
+    utfGrid.on('mouseover', function(e){ self.info.update(e);}).on('mouseout', function(e){ self.info.update();}).on('click', function(e){ self.info.selectOverlapping(e);});
     this.map.addLayer(utfGrid);
     this.map.addControl(this.info);
 
