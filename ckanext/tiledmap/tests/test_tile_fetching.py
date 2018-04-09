@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# This file is part of ckanext-map
+# Created by the Natural History Museum in London, UK
+
 import re
 import json
 import urllib
@@ -22,55 +28,59 @@ from ckanext.tiledmap.config import config as tm_config
 from nose.tools import assert_equal, assert_true, assert_false, assert_in
 
 class TestTileFetching(tests.WsgiAppCase):
-    """Test cases for the Map plugin"""
+    '''Test cases for the Map plugin'''
     dataset = None
     resource = None
     context = None
 
     @classmethod
-    @patch('ckan.lib.helpers.flash')
+    @patch(u'ckan.lib.helpers.flash')
     def setup_class(cls, mock_flash):
-        """Prepare the test"""
+        '''Prepare the test
+
+        :param mock_flash: 
+
+        '''
         # We need datastore for these tests.
         if not tests.is_datastore_supported():
-            raise nose.SkipTest("Datastore not supported")
+            raise nose.SkipTest(u'Datastore not supported')
 
         # Setup a test app
-        wsgiapp = middleware.make_app(config['global_conf'], **config)
+        wsgiapp = middleware.make_app(config[u'global_conf'], **config)
         cls.app = paste.fixture.TestApp(wsgiapp)
         ctd.CreateTestData.create()
-        cls.context = {'model': ckan.model,
-                       'session': ckan.model.Session,
-                       'user': ckan.model.User.get('testsysadmin').name}
+        cls.context = {u'model': ckan.model,
+                       u'session': ckan.model.Session,
+                       u'user': ckan.model.User.get(u'testsysadmin').name}
 
         # Load plugins
-        p.load('tiledmap')
-        p.load('datastore')
+        p.load(u'tiledmap')
+        p.load(u'datastore')
 
         # Set windshaft host/port as these settings do not have a default.
         # TODO: Test that calls fail if not set
         tm_config.update({
-            'tiledmap.windshaft.host': '127.0.0.1',
-            'tiledmap.windshaft.port': '4000'
+            u'tiledmap.windshaft.host': u'127.0.0.1',
+            u'tiledmap.windshaft.port': u'4000'
         })
 
         # Copy tiledmap settings
         cls.config = dict(tm_config.items())
 
         # Setup a dummy datastore.
-        cls.dataset = package_create(cls.context, {'name': 'map-test-dataset'})
+        cls.dataset = package_create(cls.context, {u'name': u'map-test-dataset'})
         cls.resource = datastore_create(cls.context, {
-            'resource': {
-                'package_id': cls.dataset['id']
+            u'resource': {
+                u'package_id': cls.dataset[u'id']
             },
-            'fields': [
-                {'id': 'id', 'type': 'integer'},
-                {'id': 'latitude', 'type': 'numeric'},
-                {'id': 'longitude', 'type': 'numeric'},
-                {'id': 'some_field_1', 'type': 'text'},
-                {'id': 'some_field_2', 'type': 'text'}
+            u'fields': [
+                {u'id': u'id', u'type': u'integer'},
+                {u'id': u'latitude', u'type': u'numeric'},
+                {u'id': u'longitude', u'type': u'numeric'},
+                {u'id': u'some_field_1', u'type': u'text'},
+                {u'id': u'some_field_2', u'type': u'text'}
             ],
-            'primary_key': 'id'
+            u'primary_key': u'id'
         })
 
         # Add some data. We add 4 records such that:
@@ -78,110 +88,111 @@ class TestTileFetching(tests.WsgiAppCase):
         # - The third record does not have a geom ;
         # - The fourth record has a geom, but 'some_field_1' is set to something elese.
         datastore_upsert(cls.context, {
-            'resource_id': cls.resource['resource_id'],
-            'method': 'upsert',
-            'records': [{
-                'id': '1',
-                'latitude': -15,
-                'longitude': -11,
-                'some_field_1': 'hello',
-                'some_field_2': 'world'
+            u'resource_id': cls.resource[u'resource_id'],
+            u'method': u'upsert',
+            u'records': [{
+                u'id': u'1',
+                u'latitude': -15,
+                u'longitude': -11,
+                u'some_field_1': u'hello',
+                u'some_field_2': u'world'
             }, {
-                'id': 2,
-                'latitude': 48,
-                'longitude': 23,
-                'some_field_1': 'hello',
-                'some_field_2': 'again'
+                u'id': 2,
+                u'latitude': 48,
+                u'longitude': 23,
+                u'some_field_1': u'hello',
+                u'some_field_2': u'again'
             }, {
-                'id': 3,
-                'latitude': None,
-                'longitude': None,
-                'some_field_1': 'hello',
-                'some_field_2': 'hello'
+                u'id': 3,
+                u'latitude': None,
+                u'longitude': None,
+                u'some_field_1': u'hello',
+                u'some_field_2': u'hello'
             }, {
-                'id': 4,
-                'latitude': 80,
-                'longitude': 80,
-                'some_field_1': 'all your bases',
-                'some_field_2': 'are belong to us'
+                u'id': 4,
+                u'latitude': 80,
+                u'longitude': 80,
+                u'some_field_1': u'all your bases',
+                u'some_field_2': u'are belong to us'
             }]
         })
 
         # Create a tiledmap resource view. This process itself is fully tested in test_view_create.py.
         # This will also generate the geometry column - that part of the process is fully tested in test_actions
         data_dict = {
-            'description': u'',
-            'title': u'test',
-            'resource_id': cls.resource['resource_id'],
-            'plot_marker_color': u'#EE0000',
-            'enable_plot_map': u'True',
-            'overlapping_records_view': u'',
-            'longitude_field': u'longitude',
-            'heat_intensity': u'0.1',
-            'view_type': u'tiledmap',
-            'utf_grid_title': u'_id',
-            'plot_marker_line_color': u'#FFFFFF',
-            'latitude_field': u'latitude',
-            'enable_utf_grid': u'True',
-            'utf_grid_fields' : ['some_field_1', 'some_field_2'],
-            'grid_base_color': u'#F02323',
-            'enable_heat_map': u'True',
-            'enable_grid_map': u'True'
+            u'description': u'',
+            u'title': u'test',
+            u'resource_id': cls.resource[u'resource_id'],
+            u'plot_marker_color': u'#EE0000',
+            u'enable_plot_map': u'True',
+            u'overlapping_records_view': u'',
+            u'longitude_field': u'longitude',
+            u'heat_intensity': u'0.1',
+            u'view_type': u'tiledmap',
+            u'utf_grid_title': u'_id',
+            u'plot_marker_line_color': u'#FFFFFF',
+            u'latitude_field': u'latitude',
+            u'enable_utf_grid': u'True',
+            u'utf_grid_fields' : [u'some_field_1', u'some_field_2'],
+            u'grid_base_color': u'#F02323',
+            u'enable_heat_map': u'True',
+            u'enable_grid_map': u'True'
         }
 
-        resource_view_create = p.toolkit.get_action('resource_view_create')
+        resource_view_create = p.toolkit.get_action(u'resource_view_create')
         cls.resource_view = resource_view_create(cls.context, data_dict)
 
         # Create a resource that does not have spatial fields
         cls.non_spatial_resource = datastore_create(cls.context, {
-            'resource': {
-                'package_id': cls.dataset['id']
+            u'resource': {
+                u'package_id': cls.dataset[u'id']
             },
-            'fields': [
-                {'id': 'id', 'type': 'integer'},
-                {'id': 'some_field', 'type': 'text'}
+            u'fields': [
+                {u'id': u'id', u'type': u'integer'},
+                {u'id': u'some_field', u'type': u'text'}
             ],
-            'primary_key': 'id'
+            u'primary_key': u'id'
         })
 
 
 
     @classmethod
     def teardown_class(cls):
-        """Clean up after the test"""
-        datastore_delete(cls.context, {'resource_id': cls.resource['resource_id']})
-        package_delete(cls.context, {'id': cls.dataset['id']})
-        p.unload('tiledmap')
-        p.unload('datastore')
+        '''Clean up after the test'''
+        datastore_delete(cls.context, {u'resource_id': cls.resource[u'resource_id']})
+        package_delete(cls.context, {u'id': cls.dataset[u'id']})
+        p.unload(u'tiledmap')
+        p.unload(u'datastore')
 
     def teardown(self):
+        ''' '''
         # Ensure all settings are reset to default.
         tm_config.update(TestTileFetching.config)
 
     def test_map_info(self):
-        """Test the map-info controller returns the expected data"""
-        filters = 'some_field_1:hello'
+        '''Test the map-info controller returns the expected data'''
+        filters = u'some_field_1:hello'
         res = self.app.get('/map-info?resource_id={resource_id}&view_id={view_id}&filters={filters}&fetch_id={fetch_id}'.format(
-            resource_id=TestTileFetching.resource['resource_id'],
-            view_id=TestTileFetching.resource_view['id'],
+            resource_id=TestTileFetching.resource[u'resource_id'],
+            view_id=TestTileFetching.resource_view[u'id'],
             filters=urllib.quote_plus(filters),
             fetch_id=44
         ))
         values = json.loads(res.body)
-        assert_true(values['geospatial'])
-        assert_equal(values['geom_count'], 2)
-        assert_equal(values['fetch_id'], '44')
-        assert_in('initial_zoom', values)
-        assert_in('tile_layer', values)
-        assert_equal(values['bounds'], [[-15, -11], [48, 23]])
-        assert_in('map_style', values)
-        assert_in('plot', values['map_styles'])
-        assert_in('heatmap', values['map_styles'])
-        assert_in('gridded', values['map_styles'])
-        for control in ['drawShape', 'mapType']:
-            assert_in(control, values['control_options'])
-            assert_in('position', values['control_options'][control])
-        for plugin in ['tooltipInfo', 'pointInfo']:
-            assert_in(plugin, values['plugin_options'])
-        assert_in('template', values['plugin_options']['pointInfo'])
-        assert_in('template', values['plugin_options']['tooltipInfo'])
+        assert_true(values[u'geospatial'])
+        assert_equal(values[u'geom_count'], 2)
+        assert_equal(values[u'fetch_id'], u'44')
+        assert_in(u'initial_zoom', values)
+        assert_in(u'tile_layer', values)
+        assert_equal(values[u'bounds'], [[-15, -11], [48, 23]])
+        assert_in(u'map_style', values)
+        assert_in(u'plot', values[u'map_styles'])
+        assert_in(u'heatmap', values[u'map_styles'])
+        assert_in(u'gridded', values[u'map_styles'])
+        for control in [u'drawShape', u'mapType']:
+            assert_in(control, values[u'control_options'])
+            assert_in(u'position', values[u'control_options'][control])
+        for plugin in [u'tooltipInfo', u'pointInfo']:
+            assert_in(plugin, values[u'plugin_options'])
+        assert_in(u'template', values[u'plugin_options'][u'pointInfo'])
+        assert_in(u'template', values[u'plugin_options'][u'tooltipInfo'])
