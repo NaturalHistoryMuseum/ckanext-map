@@ -4,7 +4,7 @@
 # This file is part of ckanext-map
 # Created by the Natural History Museum in London, UK
 
-import ckan.plugins as p
+from ckan.plugins import toolkit
 
 
 def map_auth(context, data_dict, privilege=u'resource_update'):
@@ -19,16 +19,18 @@ def map_auth(context, data_dict, privilege=u'resource_update'):
         data_dict[u'id'] = data_dict.get(u'resource_id')
     user = context.get(u'user')
 
-    authorized = p.toolkit.check_access(privilege, context, data_dict)
+    authorized = toolkit.check_access(privilege, context, data_dict)
 
     if not authorized:
         return {
             u'success': False,
-            u'msg': p.toolkit._(u'User {0} not authorized to update resource {1}'
-                    .format(str(user), data_dict[u'id']))
-        }
+            u'msg': toolkit._(u'User {0} not authorized to update resource {1}'
+                              .format(str(user), data_dict[u'id']))
+            }
     else:
-        return {u'success': True}
+        return {
+            u'success': True
+            }
 
 
 def create_geom_columns(context, data_dict):
