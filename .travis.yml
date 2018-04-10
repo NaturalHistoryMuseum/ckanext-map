@@ -5,3 +5,4 @@ addons:
   postgresql: "9.3"
 install: ./bin/travis-install-dependencies
 script: ./bin/travis-run-tests
+after_success: coveralls

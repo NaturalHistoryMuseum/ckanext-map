@@ -1,6 +1,8 @@
 ckanext-map
 ===========
 
+[![Travis branch](https://img.shields.io/travis/NaturalHistoryMuseum/ckanext-map/master.svg?style=flat-square)](https://travis-ci.org/NaturalHistoryMuseum/ckanext-map) [![Coveralls github branch](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-map/master.svg?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-map)
+
 A Ckan plugin to create a map view that uses server-generated tiles, allowing for maps visualization of large datasets with millions of data points. The tile server to go with this extension is available at  <a href="https://github.com/NaturalHistoryMuseum/nhm-windshaft-app">https://github.com/NaturalHistoryMuseum/nhm-windshaft-app</a>
 
 Note that this plugin requires the [ckanext-dataspatial](https://github.com/NaturalHistoryMuseum/ckanext-dataspatial) plugin, to create the geospatial columns in your dataset and provide functionality such as spatial query extent.
