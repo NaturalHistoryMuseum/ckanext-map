@@ -12,7 +12,7 @@ from ckan.lib.helpers import flash_error, flash_success
 from ckan.plugins import toolkit
 
 
-@toolkit.chained_auth_function
+@toolkit.chained_action
 def resource_view_create(prev_func, context, data_dict):
     '''Override ckan's resource_view_create so we can create geom fields when new
     tiled map views are added
@@ -29,7 +29,7 @@ def resource_view_create(prev_func, context, data_dict):
     return r
 
 
-@toolkit.chained_auth_function
+@toolkit.chained_action
 def resource_view_update(prev_func, context, data_dict):
     '''Override ckan's resource_view_update so we can update geom fields when the
     tiled map view is edited
@@ -46,7 +46,7 @@ def resource_view_update(prev_func, context, data_dict):
     return r
 
 
-@toolkit.chained_auth_function
+@toolkit.chained_action
 def resource_view_delete(prev_func, context, data_dict):
     '''
 
